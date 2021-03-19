@@ -2,7 +2,7 @@
 cmake_minimum_required (VERSION 3.2)
 
 # Project name
-project (osqp)
+project (rlqp)
 
 # Export compile commands
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -107,8 +107,8 @@ message(STATUS "Code coverage is ${COVERAGE}")
 # define c_realloc myrealloc
 # define c_free myfree
 
-if(OSQP_CUSTOM_MEMORY)
-	message(STATUS "User custom memory management header: ${OSQP_CUSTOM_MEMORY}")
+if(RLQP_CUSTOM_MEMORY)
+	message(STATUS "User custom memory management header: ${RLQP_CUSTOM_MEMORY}")
 endif()
 
 
@@ -263,24 +263,24 @@ endif (R_LANG)
 add_subdirectory(lin_sys)
 
 # Static library
-add_library (osqpstatic STATIC ${osqp_src} ${osqp_headers} ${linsys_solvers})
+add_library (rlqpstatic STATIC ${osqp_src} ${osqp_headers} ${linsys_solvers})
 # Give same name to static library output
-set_target_properties(osqpstatic PROPERTIES OUTPUT_NAME osqp)
+set_target_properties(rlqpstatic PROPERTIES OUTPUT_NAME rlqp)
 
 # Include directories for linear system solvers
-target_include_directories(osqpstatic PRIVATE ${linsys_solvers_includes})
+target_include_directories(rlqpstatic PRIVATE ${linsys_solvers_includes})
 
 # Declare include directories for the cmake exported target
-target_include_directories(osqpstatic
+target_include_directories(rlqpstatic
                            PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-                                  "$<INSTALL_INTERFACE:$<INSTALL_PREFIX>/${CMAKE_INSTALL_INCLUDEDIR}/osqp>")
+                                  "$<INSTALL_INTERFACE:$<INSTALL_PREFIX>/${CMAKE_INSTALL_INCLUDEDIR}/rlqp>")
 
 # Install Static Library
 # ----------------------------------------------
 
 include(GNUInstallDirs)
 
-install(TARGETS osqpstatic
+install(TARGETS rlqpstatic
         EXPORT  ${PROJECT_NAME}
         ARCHIVE       DESTINATION "${CMAKE_INSTALL_LIBDIR}"
         LIBRARY       DESTINATION "${CMAKE_INSTALL_LIBDIR}"
@@ -290,40 +290,40 @@ install(TARGETS osqpstatic
 # Install Headers
 # ----------------------------------------------
 
-install(FILES ${osqp_headers} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/osqp")
+install(FILES ${osqp_headers} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/rlqp")
 
 
 
 if (MATLAB)
-target_link_libraries (osqpstatic ${Matlab_LIBRARIES})
+target_link_libraries (rlqpstatic ${Matlab_LIBRARIES})
 endif (MATLAB)
 
 # If we are building Python/Matlab/R interface:
 #   - do not build shared library
 #   - do not build demo
 if (NOT PYTHON AND NOT MATLAB AND NOT R_LANG AND NOT EMBEDDED)
-    # Create osqp shared library
+    # Create rlqp shared library
     # NB: Add all the linear system solvers here
-    add_library (osqp SHARED ${osqp_src} ${osqp_headers} ${linsys_solvers})
+    add_library (rlqp SHARED ${osqp_src} ${osqp_headers} ${linsys_solvers})
 
     # Include directories for linear system solvers
-    target_include_directories(osqp PRIVATE ${linsys_solvers_includes})
+    target_include_directories(rlqp PRIVATE ${linsys_solvers_includes})
 
     # Declare include directories for the cmake exported target
-    target_include_directories(osqp
+    target_include_directories(rlqp
                                PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-                                      "$<INSTALL_INTERFACE:$<INSTALL_PREFIX>/${CMAKE_INSTALL_INCLUDEDIR}/osqp>")
+                                      "$<INSTALL_INTERFACE:$<INSTALL_PREFIX>/${CMAKE_INSTALL_INCLUDEDIR}/rlqp>")
 
-    # Install osqp shared library
-    install(TARGETS osqp
+    # Install rlqp shared library
+    install(TARGETS rlqp
             EXPORT  ${PROJECT_NAME}
             LIBRARY       DESTINATION "${CMAKE_INSTALL_LIBDIR}"
             ARCHIVE       DESTINATION "${CMAKE_INSTALL_LIBDIR}"
             RUNTIME       DESTINATION "${CMAKE_INSTALL_BINDIR}")
 
     # Create demo executable (linked to static library)
-    add_executable (osqp_demo ${PROJECT_SOURCE_DIR}/examples/osqp_demo.c)
-    target_link_libraries (osqp_demo osqpstatic)
+    add_executable (rlqp_demo ${PROJECT_SOURCE_DIR}/examples/rlqp_demo.c)
+    target_link_libraries (rlqp_demo rlqpstatic)
 
 endif (NOT PYTHON AND NOT MATLAB AND NOT R_LANG AND NOT EMBEDDED)
 
@@ -332,25 +332,25 @@ endif (NOT PYTHON AND NOT MATLAB AND NOT R_LANG AND NOT EMBEDDED)
 include(CMakePackageConfigHelpers)
 
 export(EXPORT ${PROJECT_NAME}
-  FILE "${CMAKE_CURRENT_BINARY_DIR}/osqp-targets.cmake"
-  NAMESPACE osqp::)
+  FILE "${CMAKE_CURRENT_BINARY_DIR}/rlqp-targets.cmake"
+  NAMESPACE rlqp::)
 
-if(NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/osqp-config.cmake)
-  file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/osqp-config.cmake "include(\"\${CMAKE_CURRENT_LIST_DIR}/osqp-targets.cmake\")\n")
+if(NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/rlqp-config.cmake)
+  file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/rlqp-config.cmake "include(\"\${CMAKE_CURRENT_LIST_DIR}/rlqp-targets.cmake\")\n")
 endif()
 
 
 # Create CMake packages for the install directory
 # ----------------------------------------------
 
-set(ConfigPackageLocation ${CMAKE_INSTALL_LIBDIR}/cmake/osqp)
+set(ConfigPackageLocation ${CMAKE_INSTALL_LIBDIR}/cmake/rlqp)
 
 install(EXPORT ${PROJECT_NAME}
-        FILE osqp-targets.cmake
-        NAMESPACE osqp::
+        FILE rlqp-targets.cmake
+        NAMESPACE rlqp::
         DESTINATION ${ConfigPackageLocation})
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/osqp-config.cmake
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/rlqp-config.cmake
         DESTINATION ${ConfigPackageLocation})
 
 
@@ -410,29 +410,29 @@ if (UNITTESTS)
 
     # Direct linear solver testing
     include_directories(tests)
-    add_executable(osqp_tester
-                ${PROJECT_SOURCE_DIR}/tests/osqp_tester.c
-                ${PROJECT_SOURCE_DIR}/tests/osqp_tester.h
+    add_executable(rlqp_tester
+                ${PROJECT_SOURCE_DIR}/tests/rlqp_tester.c
+                ${PROJECT_SOURCE_DIR}/tests/rlqp_tester.h
 		${PROJECT_SOURCE_DIR}/tests/minunit.h
                 ${test_headers}
                 ${codegen_test_headers})
-    target_link_libraries (osqp_tester osqpstatic)
+    target_link_libraries (rlqp_tester rlqpstatic)
 
     # Add custom memory target
-    add_executable(osqp_tester_custom_memory
+    add_executable(rlqp_tester_custom_memory
                    EXCLUDE_FROM_ALL
-                   ${PROJECT_SOURCE_DIR}/tests/osqp_tester.c
-                   ${PROJECT_SOURCE_DIR}/tests/osqp_tester.h
+                   ${PROJECT_SOURCE_DIR}/tests/rlqp_tester.c
+                   ${PROJECT_SOURCE_DIR}/tests/rlqp_tester.h
 	           ${PROJECT_SOURCE_DIR}/tests/minunit.h
                    ${test_headers}
                    ${codegen_test_headers}
 		   ${PROJECT_SOURCE_DIR}/tests/custom_memory/custom_memory.c
 		   ${PROJECT_SOURCE_DIR}/tests/custom_memory/custom_memory.h
 		)
-    target_link_libraries (osqp_tester_custom_memory osqpstatic)
+    target_link_libraries (rlqp_tester_custom_memory rlqpstatic)
 
     # Add testing
     include(CTest)
     enable_testing()
-    add_test(NAME tester COMMAND $<TARGET_FILE:osqp_tester>)
+    add_test(NAME tester COMMAND $<TARGET_FILE:rlqp_tester>)
 endif()
