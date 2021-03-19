@@ -70,6 +70,8 @@ extern const char * OSQP_ERROR_MESSAGE[];
 # define RHO_MAX (1e06)
 # define RHO_EQ_OVER_RHO_INEQ (1e03)
 # define RHO_TOL (1e-04) ///< tolerance for detecting if an inequality is set to equality
+# define RHO_VEC_MIN (RHO_MIN)
+# define RHO_VEC_MAX (RHO_MAX * RHO_EQ_OVER_RHO_INEQ)
 
 
 # ifndef EMBEDDED

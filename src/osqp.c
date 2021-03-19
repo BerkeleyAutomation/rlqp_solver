@@ -1265,6 +1265,34 @@ c_int osqp_update_P_A(OSQPWorkspace *work,
   return exitflag;
 }
 
+c_int osqp_update_rho_vec(OSQPWorkspace *work, c_float *rho_vec_new) {
+  int exitflag, i;
+
+  // Check if workspace has been initialized
+  if (!work)
+    return osqp_error(OSQP_WORKSPACE_NOT_INIT_ERROR);
+
+  for (i=0 ; i<work->data->m ; ++i)
+    if (!isfinite(rho_vec_new[i])) {
+      c_eprint("rho[%d] is not finite", i);
+      return 1;
+    }
+  
+  prea_vec_copy(rho_vec_new, work->rho_vec, work->data->m);
+
+  work->settings->rho = -1.; // use a negative value to indicate vector is set
+  work->settings->adaptive_rho = 0;
+
+  for (i=0 ; i<work->data->m ; ++i) {
+    work->rho_vec[i] = c_min(c_max(work->rho_vec[i], RHO_VEC_MIN), RHO_VEC_MAX);
+    work->rho_inv_vec[i] = 1. / rho_vec_new[i];
+  }
+
+  exitflag = work->linsys_solver->update_rho_vec(work->linsys_solver, work->rho_vec);
+
+  return exitflag;
+}
+
 c_int osqp_update_rho(OSQPWorkspace *work, c_float rho_new) {
   c_int exitflag, i;
 

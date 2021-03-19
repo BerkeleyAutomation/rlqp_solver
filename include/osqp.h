@@ -256,6 +256,15 @@ c_int osqp_update_P_A(OSQPWorkspace *work,
                       c_int          A_new_n);
 
 /**
+ * Update the rho vector.  The new value must have m entries in it.
+ * Limit each coefficient between RHO_VEC_MIN and RHO_VEC_MAX.
+ * @param  work         Workspace
+ * @param  rho_vec_new  New rho vector setting
+ * @return              Exitflag
+ */
+c_int osqp_update_rho_vec(OSQPWorkspace *work,
+                          c_float *rho_vec_new);
+/**
  * Update rho. Limit it between RHO_MIN and RHO_MAX.
  * @param  work         Workspace
  * @param  rho_new      New rho setting
