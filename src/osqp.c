@@ -4,6 +4,7 @@
 #include "scaling.h"
 #include "glob_opts.h"
 #include "error.h"
+#include "rlpolicy.h"
 
 
 #ifndef EMBEDDED
@@ -68,6 +69,8 @@ void osqp_set_default_settings(OSQPSettings *settings) {
 #ifdef PROFILING
   settings->time_limit = TIME_LIMIT;
 #endif /* ifdef PROFILING */
+
+  memset(settings->rl_policy_path, '\0', sizeof(settings->rl_policy_path));
 }
 
 #ifndef EMBEDDED
@@ -248,6 +251,8 @@ c_int osqp_setup(OSQPWorkspace** workp, const OSQPData *data, const OSQPSettings
   work->info->run_time    = 0.0;                   // Total run time to zero
   work->info->setup_time  = osqp_toc(work->timer); // Update timer information
 
+  work->rl_rho_policy = rl_policy_load(settings->rl_policy_path);
+  
   work->first_run         = 1;
   work->clear_update_time = 0;
   work->rho_update_from_solve = 0;
@@ -265,7 +270,7 @@ c_int osqp_setup(OSQPWorkspace** workp, const OSQPData *data, const OSQPSettings
   // If adaptive rho and automatic interval, but profiling disabled, we need to
   // set the interval to a default value
 # ifndef PROFILING
-  if (work->settings->adaptive_rho && !work->settings->adaptive_rho_interval) {
+  if (work->settings->adaptive_rho != RLQP_ADAPTIVE_RHO_DISABLE && !work->settings->adaptive_rho_interval) {
     if (work->settings->check_termination) {
       // If check_termination is enabled, we set it to a multiple of the check
       // termination interval
@@ -456,7 +461,7 @@ c_int osqp_solve(OSQPWorkspace *work) {
     // If adaptive rho with automatic interval, check if the solve time is a
     // certain fraction
     // of the setup time.
-    if (work->settings->adaptive_rho && !work->settings->adaptive_rho_interval) {
+    if (work->settings->adaptive_rho != RLQP_ADAPTIVE_RHO_DISABLE && !work->settings->adaptive_rho_interval) {
       // Check time
       if (osqp_toc(work->timer) >
           work->settings->adaptive_rho_fraction * work->info->setup_time) {
@@ -486,7 +491,7 @@ c_int osqp_solve(OSQPWorkspace *work) {
 # endif // PROFILING
 
     // Adapt rho
-    if (work->settings->adaptive_rho &&
+    if (work->settings->adaptive_rho != RLQP_ADAPTIVE_RHO_DISABLE &&
         work->settings->adaptive_rho_interval &&
         (iter % work->settings->adaptive_rho_interval == 0)) {
       // Update info with the residuals if it hasn't been done before
@@ -730,6 +735,9 @@ c_int osqp_cleanup(OSQPWorkspace *work) {
 
     // Free information
     if (work->info) c_free(work->info);
+
+    // Free the rl policy
+    if (work->rl_rho_policy) rl_policy_unload(work->rl_rho_policy);
 
 # ifdef PROFILING
     // Free timer
@@ -1281,7 +1289,7 @@ c_int osqp_update_rho_vec(OSQPWorkspace *work, c_float *rho_vec_new) {
   prea_vec_copy(rho_vec_new, work->rho_vec, work->data->m);
 
   work->settings->rho = -1.; // use a negative value to indicate vector is set
-  work->settings->adaptive_rho = 0;
+  work->settings->adaptive_rho = RLQP_ADAPTIVE_RHO_DISABLE;
 
   for (i=0 ; i<work->data->m ; ++i) {
     work->rho_vec[i] = c_min(c_max(work->rho_vec[i], RHO_VEC_MIN), RHO_VEC_MAX);

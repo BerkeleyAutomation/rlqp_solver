@@ -8,6 +8,7 @@ set(
     "${CMAKE_CURRENT_SOURCE_DIR}/proj.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/scaling.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/util.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/rlpolicy.cpp"
 )
 
 # Add the KKT update only in normal mode and matrix-updating embedded mode (not mode 1)

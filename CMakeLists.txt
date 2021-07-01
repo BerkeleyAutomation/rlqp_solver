@@ -4,6 +4,12 @@ cmake_minimum_required (VERSION 3.2)
 # Project name
 project (rlqp)
 
+# Enable C++14
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+# Disable extensions to keep compatible with standards
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 # Export compile commands
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -16,6 +22,9 @@ LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/configure/cmake)
 INCLUDE(FindPythonModule)
 INCLUDE(Utils)
 # include(FindMKL)  # Find MKL module
+
+find_package(Torch REQUIRED)
+find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 
 
 # Detect operating system
@@ -264,6 +273,7 @@ add_subdirectory(lin_sys)
 
 # Static library
 add_library (rlqpstatic STATIC ${osqp_src} ${osqp_headers} ${linsys_solvers})
+target_link_libraries(rlqpstatic ${TORCH_LIBRARIES} c10 Eigen3::Eigen)
 # Give same name to static library output
 set_target_properties(rlqpstatic PROPERTIES OUTPUT_NAME rlqp)
 
@@ -305,6 +315,7 @@ if (NOT PYTHON AND NOT MATLAB AND NOT R_LANG AND NOT EMBEDDED)
     # Create rlqp shared library
     # NB: Add all the linear system solvers here
     add_library (rlqp SHARED ${osqp_src} ${osqp_headers} ${linsys_solvers})
+    target_link_libraries(rlqp STATIC ${TORCH_LIBRARIES} c10 Eigen3::Eigen)
 
     # Include directories for linear system solvers
     target_include_directories(rlqp PRIVATE ${linsys_solvers_includes})

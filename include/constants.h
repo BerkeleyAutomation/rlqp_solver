@@ -51,7 +51,17 @@ enum osqp_error_type {
 };
 extern const char * OSQP_ERROR_MESSAGE[];
 
+/*************************
+* Rho adaptation modes  *
+************************/
 
+enum rlqp_rho_adapt_mode_type {
+    RLQP_ADAPTIVE_RHO_DISABLE = 0,
+    RLQP_ADAPTIVE_RHO_STANDARD = 1,
+    RLQP_ADAPTIVE_RHO_SCALAR_POLICY = 2,
+    RLQP_ADAPTIVE_RHO_VECTOR_POLICY = 3,
+};
+    
 /**********************************
 * Solver Parameters and Settings *
 **********************************/
@@ -108,7 +118,7 @@ extern const char * OSQP_ERROR_MESSAGE[];
 
 
 # if EMBEDDED != 1
-#  define ADAPTIVE_RHO (1)
+#  define ADAPTIVE_RHO (RLQP_ADAPTIVE_RHO_STANDARD)
 #  define ADAPTIVE_RHO_INTERVAL (0)
 #  define ADAPTIVE_RHO_FRACTION (0.4)           ///< fraction of setup time after which we update rho
 #  define ADAPTIVE_RHO_MULTIPLE_TERMINATION (4) ///< multiple of check_termination after which we update rho (if PROFILING disabled)

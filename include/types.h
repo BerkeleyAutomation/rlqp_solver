@@ -142,7 +142,7 @@ typedef struct {
   c_int   scaling;                ///< heuristic data scaling iterations; if 0, then disabled.
 
 # if EMBEDDED != 1
-  c_int   adaptive_rho;           ///< boolean, is rho step size adaptive?
+  enum rlqp_rho_adapt_mode_type adaptive_rho; ///< rho adaptation mode/policy (boolean compatible, 0=diable, 1=OSQP's adaptation policy, 2=scalar policy, 3=vector policy)
   c_int   adaptive_rho_interval;  ///< number of iterations between rho adaptations; if 0, then it is automatic
   c_float adaptive_rho_tolerance; ///< tolerance X for adapting rho. The new rho has to be X times larger or 1/X times smaller than the current one to trigger a new factorization.
 #  ifdef PROFILING
@@ -173,6 +173,9 @@ typedef struct {
 # ifdef PROFILING
   c_float time_limit;                    ///< maximum number of seconds allowed to solve the problem; if 0, then disabled
 # endif // ifdef PROFILING
+
+  char rl_policy_path[PATH_MAX];
+    
 } OSQPSettings;
 
 
@@ -268,6 +271,8 @@ typedef struct {
   OSQPScaling  *scaling;  ///< scaling vectors
   OSQPSolution *solution; ///< problem solution
   OSQPInfo     *info;     ///< solver information
+
+  void *rl_rho_policy; ///< RL policy for adapting rho (pointer to a C++ type)
 
 # ifdef PROFILING
   OSQPTimer *timer;       ///< timer object

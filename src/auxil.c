@@ -5,6 +5,7 @@
 #include "constants.h"
 #include "scaling.h"
 #include "util.h"
+#include "rlpolicy.h"
 
 /***********************************************************
 * Auxiliary functions needed to compute ADMM iterations * *
@@ -57,17 +58,30 @@ c_int adapt_rho(OSQPWorkspace *work) {
 
   exitflag = 0;     // Initialize exitflag to 0
 
-  // Compute new rho
-  rho_new = compute_rho_estimate(work);
+  switch (work->settings->adaptive_rho) {
+  case RLQP_ADAPTIVE_RHO_STANDARD:
+    // Compute new rho
+    rho_new = compute_rho_estimate(work);
 
-  // Set rho estimate in info
-  work->info->rho_estimate = rho_new;
+    // Set rho estimate in info
+    work->info->rho_estimate = rho_new;
 
-  // Check if the new rho is large or small enough and update it in case
-  if ((rho_new > work->settings->rho * work->settings->adaptive_rho_tolerance) ||
-      (rho_new < work->settings->rho /  work->settings->adaptive_rho_tolerance)) {
-    exitflag                 = osqp_update_rho(work, rho_new);
-    work->info->rho_updates += 1;
+    // Check if the new rho is large or small enough and update it in case
+    if ((rho_new > work->settings->rho * work->settings->adaptive_rho_tolerance) ||
+        (rho_new < work->settings->rho /  work->settings->adaptive_rho_tolerance)) {
+      exitflag                 = osqp_update_rho(work, rho_new);
+      work->info->rho_updates += 1;
+    }
+    break;
+  case RLQP_ADAPTIVE_RHO_SCALAR_POLICY:
+    c_eprint("Scalar policy not yet implement (but will be soon!) (%s:%d)", __FILE__, __LINE__);
+    exitflag = 1;
+    break;
+  case RLQP_ADAPTIVE_RHO_VECTOR_POLICY:
+    exitflag = rl_policy_compute_vec(work);
+    break;
+  case RLQP_ADAPTIVE_RHO_DISABLE:
+    break;
   }
 
   return exitflag;
@@ -905,9 +919,12 @@ c_int validate_settings(const OSQPSettings *settings) {
     return 1;
   }
 
-  if ((settings->adaptive_rho != 0) && (settings->adaptive_rho != 1)) {
+  if ((settings->adaptive_rho != RLQP_ADAPTIVE_RHO_DISABLE) &&
+      (settings->adaptive_rho != RLQP_ADAPTIVE_RHO_STANDARD) &&
+      (settings->adaptive_rho != RLQP_ADAPTIVE_RHO_SCALAR_POLICY) &&
+      (settings->adaptive_rho != RLQP_ADAPTIVE_RHO_VECTOR_POLICY)) {
 # ifdef PRINTING
-    c_eprint("adaptive_rho must be either 0 or 1");
+    c_eprint("adaptive_rho must be either 0, 1, 2, or 3");
 # endif /* ifdef PRINTING */
     return 1;
   }

@@ -277,6 +277,7 @@ OSQPSettings* copy_settings(const OSQPSettings *settings) {
 # ifdef PROFILING
   new->time_limit = settings->time_limit;
 # endif
+  strncpy(new->rl_policy_path, settings->rl_policy_path, sizeof(settings->rl_policy_path));
 
   return new;
 }
