@@ -74,7 +74,9 @@ c_int adapt_rho(OSQPWorkspace *work) {
     }
     break;
   case RLQP_ADAPTIVE_RHO_SCALAR_POLICY:
+# ifdef PRINTING
     c_eprint("Scalar policy not yet implement (but will be soon!) (%s:%d)", __FILE__, __LINE__);
+# endif
     exitflag = 1;
     break;
   case RLQP_ADAPTIVE_RHO_VECTOR_POLICY:

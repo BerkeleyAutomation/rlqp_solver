@@ -19,6 +19,8 @@
 # include "lin_sys.h"
 #endif /* ifndef EMBEDDED */
 
+#include <string.h> /* for memset */
+
 /**********************
 * Main API Functions *
 **********************/
@@ -1282,7 +1284,9 @@ c_int osqp_update_rho_vec(OSQPWorkspace *work, c_float *rho_vec_new) {
 
   for (i=0 ; i<work->data->m ; ++i)
     if (!isfinite(rho_vec_new[i])) {
+# ifdef PRINTING
       c_eprint("rho[%d] is not finite", i);
+#endif
       return 1;
     }
   

@@ -8,6 +8,8 @@ extern "C" {
 # include "glob_opts.h"
 # include "constants.h"
 
+#define _POSIX_C_SOURCE 1
+#include <limits.h> // for PATH_MAX
 
 /******************
 * Internal types *
