@@ -240,6 +240,15 @@ void print_footer(OSQPInfo *info, c_int polish) {
 
 #ifndef EMBEDDED
 
+/* Implementation of strdup that uses c_malloc */
+char * c_strdup(const char *src) {
+  char *dup;
+  if (!src) return OSQP_NULL;
+  if ((dup = c_malloc(strlen(src)+1)) != OSQP_NULL)
+      c_strcpy(dup, src);
+  return dup;
+}
+
 OSQPSettings* copy_settings(const OSQPSettings *settings) {
   OSQPSettings *new = c_malloc(sizeof(OSQPSettings));
 
@@ -259,6 +268,7 @@ OSQPSettings* copy_settings(const OSQPSettings *settings) {
 # ifdef PROFILING
   new->adaptive_rho_fraction = settings->adaptive_rho_fraction;
 # endif
+  new->adaptive_rho_policy = settings->adaptive_rho_policy; // caller will dup.
 # endif // EMBEDDED != 1
   new->max_iter = settings->max_iter;
   new->eps_abs = settings->eps_abs;
@@ -277,13 +287,11 @@ OSQPSettings* copy_settings(const OSQPSettings *settings) {
 # ifdef PROFILING
   new->time_limit = settings->time_limit;
 # endif
-  strncpy(new->rl_policy_path, settings->rl_policy_path, sizeof(settings->rl_policy_path));
 
   return new;
 }
 
 #endif // #ifndef EMBEDDED
-
 
 /*******************
 * Timer Functions *

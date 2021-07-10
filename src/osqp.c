@@ -19,8 +19,6 @@
 # include "lin_sys.h"
 #endif /* ifndef EMBEDDED */
 
-#include <string.h> /* for memset */
-
 /**********************
 * Main API Functions *
 **********************/
@@ -37,6 +35,8 @@ void osqp_set_default_settings(OSQPSettings *settings) {
 # ifdef PROFILING
   settings->adaptive_rho_fraction = (c_float)ADAPTIVE_RHO_FRACTION;
 # endif /* ifdef PROFILING */
+
+  settings->adaptive_rho_policy = (char *)OSQP_NULL;
 #endif  /* if EMBEDDED != 1 */
 
   settings->max_iter      = MAX_ITER;                /* maximum iterations to
@@ -71,8 +71,6 @@ void osqp_set_default_settings(OSQPSettings *settings) {
 #ifdef PROFILING
   settings->time_limit = TIME_LIMIT;
 #endif /* ifdef PROFILING */
-
-  memset(settings->rl_policy_path, '\0', sizeof(settings->rl_policy_path));
 }
 
 #ifndef EMBEDDED
@@ -168,6 +166,14 @@ c_int osqp_setup(OSQPWorkspace** workp, const OSQPData *data, const OSQPSettings
   // Copy settings
   work->settings = copy_settings(settings);
   if (!(work->settings)) return osqp_error(OSQP_MEM_ALLOC_ERROR);
+  
+  if (settings->adaptive_rho_policy != OSQP_NULL) {
+    // strdup uses malloc under the hood, which might be a problem
+    // if c_malloc is not malloc.
+    work->settings->adaptive_rho_policy = c_strdup(settings->adaptive_rho_policy);
+    if (!(work->settings->adaptive_rho_policy))
+      return osqp_error(OSQP_MEM_ALLOC_ERROR);
+  }
 
   // Perform scaling
   if (settings->scaling) {
@@ -253,7 +259,7 @@ c_int osqp_setup(OSQPWorkspace** workp, const OSQPData *data, const OSQPSettings
   work->info->run_time    = 0.0;                   // Total run time to zero
   work->info->setup_time  = osqp_toc(work->timer); // Update timer information
 
-  work->rl_rho_policy = rl_policy_load(settings->rl_policy_path);
+  work->rl_rho_policy = rl_policy_load(settings->adaptive_rho_policy);
   
   work->first_run         = 1;
   work->clear_update_time = 0;
@@ -726,7 +732,11 @@ c_int osqp_cleanup(OSQPWorkspace *work) {
     if (work->Adelta_x)    c_free(work->Adelta_x);
 
     // Free Settings
-    if (work->settings) c_free(work->settings);
+    if (work->settings) {
+      if (work->settings->adaptive_rho_policy)
+        c_free((char *)work->settings->adaptive_rho_policy);
+      c_free(work->settings);
+    }
 
     // Free solution
     if (work->solution) {

@@ -273,7 +273,7 @@ add_subdirectory(lin_sys)
 
 # Static library
 add_library (rlqpstatic STATIC ${osqp_src} ${osqp_headers} ${linsys_solvers})
-target_link_libraries(rlqpstatic ${TORCH_LIBRARIES} c10 Eigen3::Eigen)
+target_link_libraries(rlqpstatic c10 ${TORCH_LIBRARIES} Eigen3::Eigen)
 # Give same name to static library output
 set_target_properties(rlqpstatic PROPERTIES OUTPUT_NAME rlqp)
 
@@ -315,7 +315,7 @@ if (NOT PYTHON AND NOT MATLAB AND NOT R_LANG AND NOT EMBEDDED)
     # Create rlqp shared library
     # NB: Add all the linear system solvers here
     add_library (rlqp SHARED ${osqp_src} ${osqp_headers} ${linsys_solvers})
-    target_link_libraries(rlqp STATIC ${TORCH_LIBRARIES} c10 Eigen3::Eigen)
+    target_link_libraries(rlqp STATIC c10 ${TORCH_LIBRARIES} Eigen3::Eigen)
 
     # Include directories for linear system solvers
     target_include_directories(rlqp PRIVATE ${linsys_solvers_includes})

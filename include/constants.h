@@ -55,7 +55,7 @@ extern const char * OSQP_ERROR_MESSAGE[];
 * Rho adaptation modes  *
 ************************/
 
-enum rlqp_rho_adapt_mode_type {
+enum rlqp_adaptive_rho_type {
     RLQP_ADAPTIVE_RHO_DISABLE = 0,
     RLQP_ADAPTIVE_RHO_STANDARD = 1,
     RLQP_ADAPTIVE_RHO_SCALAR_POLICY = 2,

@@ -9,12 +9,12 @@ namespace rlqp {
         Module module_;
 
     public:
-        Policy(Module&& m)
-            : module_(std::move(m))
+        Policy(Module& m)
+            : module_(torch::jit::optimize_for_inference(m))
         {
         }
 
-        decltype(auto) forward(std::vector<at::IValue> inputs) {
+        decltype(auto) forward(const std::vector<at::IValue>& inputs) {
             return module_.forward(inputs);
         }
     };
@@ -22,15 +22,15 @@ namespace rlqp {
 
 
 // example of how to load a module...
-static int load_model(const std::string& path) {
-    try {
-        Module m = torch::jit::load(path);
-        return 0;
-    } catch (const c10::Error& ex) {
-        std::clog << "error loading model: " << ex.what() << std::endl;
-        return -1;
-    }
-}
+// static int load_model(const std::string& path) {
+//     try {
+//         Module m = torch::jit::load(path);
+//         return 0;
+//     } catch (const c10::Error& ex) {
+//         std::clog << "error loading model: " << ex.what() << std::endl;
+//         return -1;
+//     }
+// }
 
 void *rl_policy_load(const char *module_path) {
     if (module_path == nullptr || module_path[0] == '\0')
@@ -38,7 +38,8 @@ void *rl_policy_load(const char *module_path) {
 
     try {
         Module module = torch::jit::load(module_path);
-        return new rlqp::Policy(std::move(module));
+        std::clog << "Loaded model " << module_path << std::endl;
+        return new rlqp::Policy(module);
     } catch (const c10::Error& ex) {
         std::clog << "error loading model: " << ex.what() << std::endl;
         return nullptr;
@@ -96,17 +97,18 @@ int rl_policy_compute_vec(OSQPWorkspace* work) {
         torch::dtype(torch::kFloat32).requires_grad(false));
 
     Map<InputVec> inputData(static_cast<float*>(piInputs.data_ptr()), m, stride);
-    inputData.col(0) = rhoVec.template cast<float>();
-    inputData.col(1) = l.template cast<float>();
-    inputData.col(2) = u.template cast<float>();
-    inputData.col(3) = z.template cast<float>();
-    inputData.col(4) = y.template cast<float>();
-    inputData.col(5) = Ax.template cast<float>();
+    inputData.col(0) = Ax.template cast<float>();
+    inputData.col(1) = y.template cast<float>();
+    inputData.col(2) = z.template cast<float>();
+    inputData.col(3) = l.template cast<float>();
+    inputData.col(4) = u.template cast<float>();
+    inputData.col(5) = rhoVec.template cast<float>();
 
     // Compute the policy value based on the input
     // TODO: we could also cache the argument to forward
     // (std::vector<IValue> with a single tensor element.)
-    at::Tensor piOutput = policy->forward({{piInputs}}).toTensor();
+    std::vector<at::IValue> args({{piInputs}});
+    at::Tensor piOutput = policy->forward(args).toTensor();
 
     // Store (after casting) the values to the rho vector.
     rhoVec = Map<RLVec>(piOutput.data_ptr<float>(), m).template cast<c_float>();

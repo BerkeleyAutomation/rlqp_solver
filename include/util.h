@@ -42,6 +42,14 @@ OSQPSettings* copy_settings(const OSQPSettings *settings);
 void c_strcpy(char       dest[],
               const char source[]);
 
+#ifndef EMBEDDED
+/**
+ * Creates a duplicate of the source argument using c_malloc.
+ * @param source source string to copy
+ * @return copied string or NULL on failure or if the source string is NULL.
+ */
+char *c_strdup(const char *source);
+#endif
 
 # ifdef PRINTING
 
