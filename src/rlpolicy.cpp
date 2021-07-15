@@ -5,43 +5,25 @@
 using Module = torch::jit::script::Module;
 
 namespace rlqp {
-    class Policy {
+    struct Policy {
+        Module baseModule_;
         Module module_;
-
-    public:
-        Policy(Module& m)
-            : module_(torch::jit::optimize_for_inference(m))
-        {
-        }
-
-        decltype(auto) forward(const std::vector<at::IValue>& inputs) {
-            return module_.forward(inputs);
-        }
     };
 }
-
-
-// example of how to load a module...
-// static int load_model(const std::string& path) {
-//     try {
-//         Module m = torch::jit::load(path);
-//         return 0;
-//     } catch (const c10::Error& ex) {
-//         std::clog << "error loading model: " << ex.what() << std::endl;
-//         return -1;
-//     }
-// }
 
 void *rl_policy_load(const char *module_path) {
     if (module_path == nullptr || module_path[0] == '\0')
         return nullptr;
 
+    rlqp::Policy* policy = new rlqp::Policy();
     try {
-        Module module = torch::jit::load(module_path);
+        policy->baseModule_ = torch::jit::load(module_path);
+        policy->module_ = torch::jit::optimize_for_inference(policy->baseModule_);
         std::clog << "Loaded model " << module_path << std::endl;
-        return new rlqp::Policy(module);
+        return policy;
     } catch (const c10::Error& ex) {
         std::clog << "error loading model: " << ex.what() << std::endl;
+        delete policy;
         return nullptr;
     }
 }
@@ -63,7 +45,7 @@ int rl_policy_compute_vec(OSQPWorkspace* work) {
     static constexpr int stride = 6;
     using QPVec = Array<c_float, Eigen::Dynamic, 1>;
     using RLVec = Array<float, Eigen::Dynamic, 1>;
-    using InputVec = Array<float, Eigen::Dynamic, stride>;
+    using InputVec = Array<float, Eigen::Dynamic, stride, Eigen::RowMajor | Eigen::DontAlign>;
 
     int m = (int)work->data->m;
     
@@ -107,13 +89,14 @@ int rl_policy_compute_vec(OSQPWorkspace* work) {
     // Compute the policy value based on the input
     // TODO: we could also cache the argument to forward
     // (std::vector<IValue> with a single tensor element.)
-    std::vector<at::IValue> args({{piInputs}});
-    at::Tensor piOutput = policy->forward(args).toTensor();
+    at::Tensor piOutput = policy->module_.forward({{piInputs}}).toTensor();
 
     // Store (after casting) the values to the rho vector.
     rhoVec = Map<RLVec>(piOutput.data_ptr<float>(), m).template cast<c_float>();
-
+    
     assert(rhoVec.allFinite()); // TODO: this is useful for debugging, but should probably be replaced for regular usage
+
+    Map<QPVec>(work->rho_inv_vec, m) = 1 / rhoVec;
     
     return 0;
 }

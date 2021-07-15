@@ -81,6 +81,8 @@ c_int adapt_rho(OSQPWorkspace *work) {
     break;
   case RLQP_ADAPTIVE_RHO_VECTOR_POLICY:
     exitflag = rl_policy_compute_vec(work);
+    if (exitflag == 0)
+      exitflag = work->linsys_solver->update_rho_vec(work->linsys_solver, work->rho_vec);
     break;
   case RLQP_ADAPTIVE_RHO_DISABLE:
     break;
